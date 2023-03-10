@@ -2,6 +2,8 @@ from django.http import request,JsonResponse,HttpRequest
 from django.core.exceptions import ObjectDoesNotExist
 from .models import SmartPhone
 import json
+from pprint import pprint
+import requests
 
 def add_product(reqeust: HttpRequest) -> JsonResponse:
     """add new product to database"""
@@ -20,7 +22,7 @@ def add_product(reqeust: HttpRequest) -> JsonResponse:
         memory = data.get('memory', False)
         name = data.get('name', False)
         model = data.get('model', False)
-
+        pprint(body)
         # check all properties is valid
         if price == False:
             return JsonResponse({"status": "price field is required."})
@@ -54,31 +56,55 @@ def add_product(reqeust: HttpRequest) -> JsonResponse:
         returned = smartphone.to_dict()
         return JsonResponse(returned)
 def get_all_product(request:HttpRequest):
-    if request.method == "GET":
+    if request.method=='GET':
+        # Get all the smartphone objects
+        phones = SmartPhone.objects.all()
+        
 
-        products = SmartPhone.objects.all()
+        result = {
+            'result':[]
+        }
+        # Loop through the objects and append them to the result dictionary
+        for phone in phones:
+            model = phone.model
+            result.setdefault(model,[])
+            result[model].append({
+                'id':phone.id,
+                'price':phone.price,
+                'img_url':phone.img_url,
+                'color':phone.color,
+                'ram':phone.ram,
+                'memory':phone.memory,
+                'name':phone.name,
+            })
+       
+        return JsonResponse(result)
 
-        result = []
-
-        for product in products:
-
-            result.append(product.to_dict())
-
-        return JsonResponse(result, safe=False)
     
 
-def get_product(request:HttpRequest, pk:int):
+def get_product(request:HttpRequest):
     if request.method == 'GET':
-        try:
+        
+        
+        products = SmartPhone.objects.all()
+        result = []
+        args = request.GET
+        
 
-            product = SmartPhone.objects.get(id=pk)
-            return JsonResponse(product.to_dict())
-        except ObjectDoesNotExist:
-            return JsonResponse({'status':"Object doesn't exist"})
+        for product in products:
+            # print(product.name)
+            if args.get('ram'):
+                # print('ok')
+                if product.ram == args['ram']:
+                    print(args['ram'])
+                    result.append(product.to_dict())
+        # print(result)
+        return JsonResponse(result,safe=False)
+        
 
 
 def delete_product(request:HttpRequest, pk:int):
-    if request.method == 'POST':
+    if request.method == 'GET':
 
         try:
             product = SmartPhone.objects.get(id=pk)
