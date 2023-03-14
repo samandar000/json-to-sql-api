@@ -82,7 +82,15 @@ def get_all_product(request:HttpRequest):
 
     
 
-def get_product(request:HttpRequest):
+def get_product(request:HttpRequest, pk:int):
+    if request.method == 'GET':
+        try:
+
+            product = SmartPhone.objects.get(id=pk)
+            return JsonResponse(product.to_dict())
+        except ObjectDoesNotExist:
+            return JsonResponse({'status':"Object doesn't exist"})
+def get_by_ram(request:HttpRequest):
     if request.method == 'GET':
         
         
@@ -100,61 +108,70 @@ def get_product(request:HttpRequest):
                     result.append(product.to_dict())
         # print(result)
         return JsonResponse(result,safe=False)
+    
+
+
+def get_by_memory(request:HttpRequest):
+    if request.method == 'GET':
+        
+        
+        products = SmartPhone.objects.all()
+        result = []
+        args = request.GET
         
 
+        for product in products:
+            # print(product.name)
+            if args.get('memory'):
+                # print('ok')
+                if product.ram == args['memory']:
+                    print(args['memory'])
+                    result.append(product.to_dict())
+        # print(result)
+        return JsonResponse(result,safe=False)
 
-def delete_product(request:HttpRequest, pk:int):
-    if request.method == 'GET':
 
-        try:
-            product = SmartPhone.objects.get(id=pk)
-            product.delete()
-            return JsonResponse(product.to_dict())
-        except ObjectDoesNotExist:
-            return JsonResponse({'status':"Object doesn't exist"})
+def get_product_by_model(request:HttpRequest,model):
+    if request.method=='GET':
+        # Get all the smartphone objects
+        phones = SmartPhone.objects.filter(model__contains=model)
+        reslut = {
+            'model':model,
+            'result':[]
+        }
+        # Loop through the objects and append them to the result dictionary
+        for phone in phones:
+            reslut['result'].append({          
+                'id':phone.id,
+                'price':phone.price,
+                'img_url':phone.img_url,
+                'color':phone.color,
+                'ram':phone.ram,
+                'memory':phone.memory,
+                'name':phone.name,
+                'created_at':phone.created_at,
+                'updated_at':phone.updated_at,
+                
+            })
+    return JsonResponse(reslut)
+                             
 
-def update_product(reqeust: HttpRequest, pk: int) -> JsonResponse:
-    """delete product from database by id"""
-    if reqeust.method == "POST":
-        try:
-            # get body from request
-            body = reqeust.body
-            # get body data
-            decoded = body.decode()
-            # data to dict
-            data = json.loads(decoded)
-            # get all properties
-            price = data.get('price', False)
-            img_url = data.get('img_url', False)
-            color = data.get('color', False)
-            ram = data.get('ram', False)
-            memory = data.get('memory', False)
-            name = data.get('name', False)
-            model = data.get('model', False)
+# Update a product
+def update_price(request:HttpRequest,pk):
+    if request.method=='GET':
+        # Get the smartphone object
+        phone = SmartPhone.objects.get(id=pk)
+        # Get the price from the request
+        price = phone.price+10
+        # Update the price
+        phone.price = price
+        phone.save()
+        
 
-            # get product from database by id
-            product = SmartPhone.objects.get(id=pk)
-
-            # check all properties is valid
-            if price is not False:
-                product.price = price
-            if img_url:
-                product.img_url = img_url
-            if color:
-                product.color = color
-            if ram:
-                product.ram = ram
-            if memory:
-                product.memory = memory
-            if name:
-                product.name = name
-            if model:
-                product.model = model
-
-            # save product
-            product.save()
-
-            return JsonResponse(product.to_dict())
-            
-        except ObjectDoesNotExist:
-            return JsonResponse({"status": "object doesn't exist"})
+    return JsonResponse({
+        'name':phone.name,
+        'price':phone.price,
+        'model':phone.model,
+        'color':phone.color,
+        'ram':phone.ram,
+    })
